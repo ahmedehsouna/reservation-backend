@@ -10,5 +10,6 @@ Router.route('')
     .get(guests_1.default.index)
     .post(guests_1.default.store);
 Router.route('/:id')
-    .put(guests_1.default.update);
+    .put(guests_1.default.update)
+    .delete(guests_1.default.delete);
 exports.default = Router;

@@ -8,16 +8,21 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
-const db_1 = __importDefault(require("../db/db"));
+const db_1 = require("../db/db");
+const limit = 30;
 exports.default = {
     index: (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+        var _a;
         try {
-            let guests = yield (0, db_1.default)('guests').select('*');
-            res.json({ error: false, data: guests });
+            let page = Number(req.query.page || 1);
+            let offset = (page - 1) * limit;
+            let promise = yield Promise.all([
+                (0, db_1.db)('guests').where({ active: true }).offset(offset).limit(limit),
+                (0, db_1.db)('guests').where({ active: true }).count().first()
+            ]);
+            // let guests = await
+            res.json({ error: false, data: promise[0], pagination: { index: page - 1, length: Math.ceil(+(((_a = promise[1]) === null || _a === void 0 ? void 0 : _a.count) || 0) / limit) } });
         }
         catch (err) {
             res.json({ error: true, message: err.message });
@@ -25,7 +30,7 @@ exports.default = {
     }),
     store: (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         try {
-            let guest = yield (0, db_1.default)('guests').insert({ name: 'Guest', email: 'guest@', phone_number: '0912893829' });
+            let guest = yield (0, db_1.db)('guests').insert(req.body);
             res.json({ error: false, data: guest });
         }
         catch (err) {
@@ -34,7 +39,16 @@ exports.default = {
     }),
     update: (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         try {
-            let guest = yield (0, db_1.default)('guests').where(req.params['id']).update({ name: 'Guest', email: 'guest@', phone_number: '0912893829' }).returning('*');
+            let guest = yield (0, db_1.db)('guests').where({ id: req.params['id'] }).update(req.body);
+            res.json({ error: false, data: guest });
+        }
+        catch (err) {
+            res.json({ error: true, message: err.message });
+        }
+    }),
+    delete: (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+        try {
+            let guest = yield (0, db_1.db)('guests').where({ id: req.params['id'] }).update({ active: false });
             res.json({ error: false, data: guest });
         }
         catch (err) {

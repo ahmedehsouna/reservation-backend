@@ -10,6 +10,7 @@ Router.route('')
 
 Router.route('/:id')
 .put(GuestsController.update)
+.delete(GuestsController.delete)
 
 
 export default Router;

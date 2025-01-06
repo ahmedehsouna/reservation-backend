@@ -1,6 +1,9 @@
-import knex from 'knex';
+import knex from "knex";
 
-import knexfile from './knexfile';
+import knexfile from "./knexfile";
 
 // @ts-ignore
-export default knex(knexfile.development);
+export const db = knex(knexfile.development);
+// export const Guest = () => db("guests");
+// export const Reservation = () => db("reservations");
+// export const Room = () => db("rooms");

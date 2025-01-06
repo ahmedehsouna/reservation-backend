@@ -8,6 +8,7 @@ exports.up = function(knex) {
     table.string('name');
     table.string('email').unique();
     table.string('phone_number').unique();
+    table.boolean('active').defaultTo(true);
   });
 };
 
