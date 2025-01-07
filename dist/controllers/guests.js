@@ -9,6 +9,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+const express_validator_1 = require("express-validator");
 const db_1 = require("../db/db");
 const limit = 30;
 exports.default = {
@@ -18,11 +19,18 @@ exports.default = {
             let page = Number(req.query.page || 1);
             let offset = (page - 1) * limit;
             let promise = yield Promise.all([
-                (0, db_1.db)('guests').where({ active: true }).offset(offset).limit(limit),
-                (0, db_1.db)('guests').where({ active: true }).count().first()
+                (0, db_1.db)("guests").where({ active: true }).offset(offset).limit(limit),
+                (0, db_1.db)("guests").where({ active: true }).count().first(),
             ]);
             // let guests = await
-            res.json({ error: false, data: promise[0], pagination: { index: page - 1, length: Math.ceil(+(((_a = promise[1]) === null || _a === void 0 ? void 0 : _a.count) || 0) / limit) } });
+            res.json({
+                error: false,
+                data: promise[0],
+                pagination: {
+                    index: page - 1,
+                    length: Math.ceil(+(((_a = promise[1]) === null || _a === void 0 ? void 0 : _a.count) || 0) / limit),
+                },
+            });
         }
         catch (err) {
             res.json({ error: true, message: err.message });
@@ -30,7 +38,7 @@ exports.default = {
     }),
     store: (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         try {
-            let guest = yield (0, db_1.db)('guests').insert(req.body);
+            let guest = yield (0, db_1.db)("guests").insert(req.body);
             res.json({ error: false, data: guest });
         }
         catch (err) {
@@ -39,8 +47,16 @@ exports.default = {
     }),
     update: (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         try {
-            let guest = yield (0, db_1.db)('guests').where({ id: req.params['id'] }).update(req.body);
-            res.json({ error: false, data: guest });
+            const errors = (0, express_validator_1.validationResult)(req);
+            console.log();
+            if (errors.array().length)
+                res.json({ error: true, errors: errors.array() });
+            else {
+                let guest = yield (0, db_1.db)("guests")
+                    .where({ id: req.params["id"] })
+                    .update(req.body);
+                res.json({ error: false, data: guest });
+            }
         }
         catch (err) {
             res.json({ error: true, message: err.message });
@@ -48,11 +64,13 @@ exports.default = {
     }),
     delete: (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         try {
-            let guest = yield (0, db_1.db)('guests').where({ id: req.params['id'] }).update({ active: false });
+            let guest = yield (0, db_1.db)("guests")
+                .where({ id: req.params["id"] })
+                .update({ active: false });
             res.json({ error: false, data: guest });
         }
         catch (err) {
             res.json({ error: true, message: err.message });
         }
-    })
+    }),
 };

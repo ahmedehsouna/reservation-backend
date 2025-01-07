@@ -1,0 +1,51 @@
+import {db} from '../db/db';
+import { Request, Response } from 'express';
+
+const limit = 30;
+
+export default {
+    index: async (req:Request,res:Response) => {
+
+        try{
+            let page: number = Number(req.query.page || 1)
+            let offset = (page - 1) * limit
+            let promise = await Promise.all([
+                db('rooms').where({active: true}).offset(offset).limit(limit),
+                db('rooms').where({active:true}).count().first()
+            ])
+            // let guests = await
+            res.json({error: false, data:promise[0], pagination:{index: page - 1, length: Math.ceil( +(promise[1]?.count || 0) / limit) }});
+        }catch(err:any){
+            res.json({error: true, message: err.message})
+        }
+    },
+
+    store: async (req:Request,res:Response) => {
+        try{
+            let guest = await db('rooms').insert(req.body)
+            res.json({error: false, data:guest});
+        }catch(err:any){
+            res.json({error: true, message: err.message})
+        }
+    },
+
+    update: async (req:Request,res:Response) => {
+        try{
+            let guest = await db('rooms').where({id: req.params['id']}).update(req.body)
+            res.json({error: false, data:guest});
+        }catch(err:any){
+            res.json({error: true, message: err.message})
+        }
+    },
+
+    delete: async (req:Request,res:Response) => {
+        try{
+            let guest = await db('rooms').where({id: req.params['id']}).update({active:false})
+            res.json({error: false, data:guest});
+        }catch(err:any){
+            res.json({error: true, message: err.message})
+        }
+    }
+
+}
+
