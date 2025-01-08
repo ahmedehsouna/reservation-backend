@@ -27,6 +27,25 @@ export default {
     }
   },
 
+  show: async (req: Request, res: Response) => {
+    try {
+
+      let [guest, past_reservations] = await Promise.all([
+         db("guests").where({ id: req.params.id ,active: true,  }).first(),
+         db("reservations").where({ active: true, guest_id: req.params.id  }).where('end', '<=' , new Date()).count().first()
+
+      ])
+      
+      // let guests = await
+      res.json({
+        error: false,
+        data: {guest, past_reservations},
+      });
+    } catch (err: any) {
+      res.json({ error: true, message: err.message });
+    }
+  },
+
   store: async (req: Request, res: Response) => {
     try {
       let guest = await db("guests").insert(req.body);
@@ -40,7 +59,6 @@ export default {
     try {
       const errors = validationResult(req);
 
-      console.log()
       if (errors.array().length) res.json({ error: true, errors: errors.array() });
       else {
         let guest = await db("guests")

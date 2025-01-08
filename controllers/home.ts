@@ -1,7 +1,6 @@
 import {db} from '../db/db';
 import { Request, Response } from 'express';
 
-const limit = 30;
 
 export default {
     index: async (req:Request,res:Response) => {

@@ -36,6 +36,22 @@ exports.default = {
             res.json({ error: true, message: err.message });
         }
     }),
+    show: (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+        try {
+            let [guest, past_reservations] = yield Promise.all([
+                (0, db_1.db)("guests").where({ id: req.params.id, active: true, }).first(),
+                (0, db_1.db)("reservations").where({ active: true, guest_id: req.params.id }).where('end', '<=', new Date()).count().first()
+            ]);
+            // let guests = await
+            res.json({
+                error: false,
+                data: { guest, past_reservations },
+            });
+        }
+        catch (err) {
+            res.json({ error: true, message: err.message });
+        }
+    }),
     store: (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         try {
             let guest = yield (0, db_1.db)("guests").insert(req.body);
@@ -48,7 +64,6 @@ exports.default = {
     update: (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         try {
             const errors = (0, express_validator_1.validationResult)(req);
-            console.log();
             if (errors.array().length)
                 res.json({ error: true, errors: errors.array() });
             else {
