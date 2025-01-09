@@ -14,6 +14,10 @@ Router.route('/:id')
 .delete(ReservationsController.delete)
 
 
+Router.get('/monthly', ReservationsController.countReservationsMonthly)
+Router.get('/by-day', ReservationsController.getReservationsByDay)
+
+
 export default Router;
 
 

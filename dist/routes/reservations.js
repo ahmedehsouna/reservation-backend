@@ -13,4 +13,6 @@ Router.route('')
 Router.route('/:id')
     .put(reservations_1.default.update)
     .delete(reservations_1.default.delete);
+Router.get('/monthly', reservations_1.default.countReservationsMonthly);
+Router.get('/by-day', reservations_1.default.getReservationsByDay);
 exports.default = Router;
