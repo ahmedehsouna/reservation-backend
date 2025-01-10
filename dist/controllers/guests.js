@@ -9,83 +9,78 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const express_validator_1 = require("express-validator");
-const db_1 = require("../db/db");
+exports.GuestsController = void 0;
 const limit = 30;
-exports.default = {
-    index: (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-        var _a;
-        try {
-            let page = Number(req.query.page || 1);
+class GuestsController {
+    constructor(guestsData, reservationsData) {
+        this.guestsData = guestsData;
+        this.reservationsData = reservationsData;
+    }
+    index(page) {
+        return __awaiter(this, void 0, void 0, function* () {
+            var _a;
             let offset = (page - 1) * limit;
-            let promise = yield Promise.all([
-                (0, db_1.db)("guests").where({ active: true }).offset(offset).limit(limit),
-                (0, db_1.db)("guests").where({ active: true }).count().first(),
-            ]);
-            // let guests = await
-            res.json({
-                error: false,
-                data: promise[0],
+            let response = yield this.guestsData.index(offset, limit);
+            return {
+                guests: response[0],
                 pagination: {
                     index: page - 1,
-                    length: Math.ceil(+(((_a = promise[1]) === null || _a === void 0 ? void 0 : _a.count) || 0) / limit),
+                    length: Math.ceil(+(((_a = response[1]) === null || _a === void 0 ? void 0 : _a.count) || 0) / limit),
                 },
-            });
-        }
-        catch (err) {
-            res.json({ error: true, message: err.message });
-        }
-    }),
-    show: (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-        try {
-            let [guest, past_reservations] = yield Promise.all([
-                (0, db_1.db)("guests").where({ id: req.params.id, active: true, }).first(),
-                (0, db_1.db)("reservations").where({ active: true, guest_id: req.params.id }).where('end', '<=', new Date()).count().first()
-            ]);
+            };
             // let guests = await
-            res.json({
-                error: false,
-                data: { guest, past_reservations },
-            });
-        }
-        catch (err) {
-            res.json({ error: true, message: err.message });
-        }
-    }),
-    store: (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-        try {
-            let guest = yield (0, db_1.db)("guests").insert(req.body);
-            res.json({ error: false, data: guest });
-        }
-        catch (err) {
-            res.json({ error: true, message: err.message });
-        }
-    }),
-    update: (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-        try {
-            const errors = (0, express_validator_1.validationResult)(req);
-            if (errors.array().length)
-                res.json({ error: true, errors: errors.array() });
-            else {
-                let guest = yield (0, db_1.db)("guests")
-                    .where({ id: req.params["id"] })
-                    .update(req.body);
-                res.json({ error: false, data: guest });
-            }
-        }
-        catch (err) {
-            res.json({ error: true, message: err.message });
-        }
-    }),
-    delete: (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-        try {
-            let guest = yield (0, db_1.db)("guests")
-                .where({ id: req.params["id"] })
-                .update({ active: false });
-            res.json({ error: false, data: guest });
-        }
-        catch (err) {
-            res.json({ error: true, message: err.message });
-        }
-    }),
-};
+        });
+    }
+    select(name) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return yield this.guestsData.select(name, limit);
+        });
+    }
+    show(id) {
+        return __awaiter(this, void 0, void 0, function* () {
+            let [guest, past_reservations] = yield Promise.all([
+                this.guestsData.show(id),
+                this.reservationsData.get_guest_past_reservations(id),
+            ]);
+            return { guest, past_reservations };
+        });
+    }
+    store(body) {
+        return __awaiter(this, void 0, void 0, function* () {
+            let [name, email, phone_number] = yield Promise.all([
+                this.guestsData.checkGuestUnique("name", body.name),
+                this.guestsData.checkGuestUnique("email", body.email),
+                this.guestsData.checkGuestUnique("phone_number", body.phone_number),
+            ]);
+            let message = (name || email || phone_number ? "These fields exist: " : "") +
+                (name ? "Name " : "") +
+                (email ? "Email " : "") +
+                (phone_number ? "Phone number" : "");
+            if (message)
+                throw new Error(message);
+            return yield this.guestsData.store(body);
+        });
+    }
+    update(id, body) {
+        return __awaiter(this, void 0, void 0, function* () {
+            let [name, email, phone_number] = yield Promise.all([
+                this.guestsData.checkGuestUnique("name", body.name, +id),
+                this.guestsData.checkGuestUnique("email", body.email, +id),
+                this.guestsData.checkGuestUnique("phone_number", body.phone_number, +id),
+            ]);
+            let message = (name || email || phone_number ? "These fields exist: " : "") +
+                (name ? "Name " : "") +
+                (email ? "Email " : "") +
+                (phone_number ? "Phone number" : "");
+            if (message)
+                throw new Error(message);
+            return yield this.guestsData.update(id, body);
+        });
+    }
+    delete(id) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return yield this.guestsData.delete(id);
+        });
+    }
+}
+exports.GuestsController = GuestsController;

@@ -1,84 +1,75 @@
-import { validationResult } from "express-validator";
-import { db } from "../db/db";
-import { Request, Response } from "express";
+import { GuestsData } from "../data/guests";
+import { ReservationsData } from "../data/reservations";
 
 const limit = 30;
 
-export default {
-  index: async (req: Request, res: Response) => {
-    try {
-      let page: number = Number(req.query.page || 1);
-      let offset = (page - 1) * limit;
-      let promise = await Promise.all([
-        db("guests").where({ active: true }).offset(offset).limit(limit),
-        db("guests").where({ active: true }).count().first(),
-      ]);
-      // let guests = await
-      res.json({
-        error: false,
-        data: promise[0],
-        pagination: {
-          index: page - 1,
-          length: Math.ceil(+(promise[1]?.count || 0) / limit),
-        },
-      });
-    } catch (err: any) {
-      res.json({ error: true, message: err.message });
-    }
-  },
+export class GuestsController {
+  constructor(
+    private guestsData: GuestsData,
+    private reservationsData: ReservationsData
+  ) {}
+  async index(page: number) {
+    let offset = (page - 1) * limit;
+    let response = await this.guestsData.index(offset, limit);
+    return {
+      guests: response[0],
+      pagination: {
+        index: page - 1,
+        length: Math.ceil(+(response[1]?.count || 0) / limit),
+      },
+    };
+    // let guests = await
+  }
 
-  show: async (req: Request, res: Response) => {
-    try {
+  async select(name:string) {
+     return await this.guestsData.select(name, limit);
+  }
 
-      let [guest, past_reservations] = await Promise.all([
-         db("guests").where({ id: req.params.id ,active: true,  }).first(),
-         db("reservations").where({ active: true, guest_id: req.params.id  }).where('end', '<=' , new Date()).count().first()
+  async show(id:string) {
+    let [guest, past_reservations] = await Promise.all([
+      this.guestsData.show(id),
+      this.reservationsData.get_guest_past_reservations(id),
+    ]);
 
-      ])
-      
-      // let guests = await
-      res.json({
-        error: false,
-        data: {guest, past_reservations},
-      });
-    } catch (err: any) {
-      res.json({ error: true, message: err.message });
-    }
-  },
+    return { guest, past_reservations };
+  }
 
-  store: async (req: Request, res: Response) => {
-    try {
-      let guest = await db("guests").insert(req.body);
-      res.json({ error: false, data: guest });
-    } catch (err: any) {
-      res.json({ error: true, message: err.message });
-    }
-  },
+  async store(body: any) {
+    let [name, email, phone_number] = await Promise.all([
+      this.guestsData.checkGuestUnique("name", body.name),
+      this.guestsData.checkGuestUnique("email", body.email),
+      this.guestsData.checkGuestUnique("phone_number", body.phone_number),
+    ]);
 
-  update: async (req: Request, res: Response) => {
-    try {
-      const errors = validationResult(req);
+    let message =
+      (name || email || phone_number ? "These fields exist: " : "") +
+      (name ? "Name " : "") +
+      (email ? "Email " : "") +
+      (phone_number ? "Phone number" : "");
 
-      if (errors.array().length) res.json({ error: true, errors: errors.array() });
-      else {
-        let guest = await db("guests")
-          .where({ id: req.params["id"] })
-          .update(req.body);
-        res.json({ error: false, data: guest });
-      }
-    } catch (err: any) {
-      res.json({ error: true, message: err.message });
-    }
-  },
+    if (message) throw new Error(message);
+    return await this.guestsData.store(body);
+  }
 
-  delete: async (req: Request, res: Response) => {
-    try {
-      let guest = await db("guests")
-        .where({ id: req.params["id"] })
-        .update({ active: false });
-      res.json({ error: false, data: guest });
-    } catch (err: any) {
-      res.json({ error: true, message: err.message });
-    }
-  },
-};
+  async update(id: string, body: any) {
+    let [name, email, phone_number] = await Promise.all([
+      this.guestsData.checkGuestUnique("name", body.name, +id),
+      this.guestsData.checkGuestUnique("email", body.email, +id),
+      this.guestsData.checkGuestUnique("phone_number", body.phone_number, +id),
+    ]);
+
+    let message =
+      (name || email || phone_number ? "These fields exist: " : "") +
+      (name ? "Name " : "") +
+      (email ? "Email " : "") +
+      (phone_number ? "Phone number" : "");
+
+    if (message) throw new Error(message);
+
+    return await this.guestsData.update(id, body);
+  }
+
+  async delete(id: string) {
+    return await this.guestsData.delete(id);
+  }
+}
